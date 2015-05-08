@@ -53,6 +53,21 @@ class MDP:
     def get_states(self):
         return self.states_
 
+    def get_parked(self):
+        return self.cur_state_ % 4 > 1
+
+    def get_available(self):
+        return self.cur_state_ % 4 in (1, 3)
+
+    def get_handicapped(self):
+        front = len(self.states_) / 4 / 2
+        return self.get_spot()== front or self.get_spot() == front - 1
+            
+        
+    def get_spot(self):
+        return self.cur_state_ / 4
+           
+
     def __str__(self):
         result = ""
         result += "Current State: " + str(self.cur_state_) + "\n"
