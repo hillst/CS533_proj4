@@ -18,6 +18,7 @@ class MDP:
         self.reward_ = 0
         self.rewards_ = rewards
         self.cur_state_ = initial_state
+        self.initial_state = initial_state
         self.time_ = 0
 
     """
@@ -53,6 +54,11 @@ class MDP:
     def get_states(self):
         return self.states_
 
+    def reset(self):
+        self.cur_state_ = self.initial_state
+        self.time_ = 0
+        self.reward_ = 0
+
     def get_parked(self):
         return self.cur_state_ % 4 > 1
 
@@ -62,7 +68,6 @@ class MDP:
     def get_handicapped(self):
         front = len(self.states_) / 4 / 2
         return self.get_spot()== front or self.get_spot() == front - 1
-            
         
     def get_spot(self):
         return self.cur_state_ / 4

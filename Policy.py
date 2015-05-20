@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import random
 from math import exp
-STATE = 0
-VALUE = 1
+
 class Policy:
     def __init__(self, MDP, name):
         self.MDP_ = MDP
@@ -47,6 +46,9 @@ class Policy:
             t += 1
         return backup_table, action_table
 
+    def take_action(self, action):
+        self.MDP_.take_action(action)
+
 
 class RandomPolicy(Policy):
     def __init__(self, MDP, name):
@@ -59,41 +61,68 @@ class RandomPolicy(Policy):
 """
 Pure model-free reinforcement learning agent that uses q-learning.
 1. Start with initial Q-function (e.g. all zeros)
-2. Take action from explore/exploit policy giving new state s’ (this is given by the BasePolicy)
+2. Take action from explore/exploit policy giving our new state s' (given by base policy)
 (should converge to greedy policy, i.e. GLIE)
 q(s,a) = q(s,a) + alpha * (R(s) + beta max (a') (Q(s', a') - Q(s, a))
-
-    -NOTE betamax (a') Q(s', a') is a very rough measure based on our current model of the world.
+    -After taking action a in state s and reaching state s',
+    -NOTE beta-max (a') Q(s', a') is a very rough measure based on our current model of the world.
     -beta is our discount term
-    -alpha is our explore/exploit term
+    -alpha is ????
 3. Perform TD update
 Q(s,a) is current estimate of optimal Q-function.
 4. Goto 2
+
+TODO:
+Probably need to implement back propagation somehow... it's taking far to long for the program to know crashing is bad
 """
+
 class QLearningPolicy(Policy):
-    def __init__(self, MDP, t):
+
+    def __init__(self, MDP, alpha, beta, epsilon=.9):
         Policy.__init__(self, MDP, "QLearningPolicy")
-        self.t = float(t)
+        self.alpha = float(alpha)
+        self.beta = float(beta)
+        self.epsilon = float(epsilon)
         self.q_values = [[0, 0] for i in range(len(MDP.get_states()))]
 
-    def boltzmann_action(self):
-        p_action_0 = exp(self.q_values[self.MDP_.get_state()][0] / self.t) / \
-                        (exp(self.q_values[self.MDP_.get_state()][0] / self.t) +
-                        exp(self.q_values[self.MDP_.get_state()][1] / self.t))
+    def epsilon_exploration(self):
+        #get best or do random
+        if random.random() > self.epsilon:
+            return random.randint(0, 1)
+        else:
+            return self.best_action()
 
-        if random.random() < p_action_0:
+    def choose_training_action(self):
+        return self.epsilon_exploration()
+
+
+    def choose_action(self, horizon):
+        return self.best_action()
+
+    def best_action(self):
+        if self.q_values[self.MDP_.get_state()][0] >= self.q_values[self.MDP_.get_state()][1]:
             return 0
         else:
             return 1
 
-    def choose_action(self, horizon):
-        if horizon < training:
-            #chooze boltzmann, update reward?
-        print "butts"
+    """
+    NOTE:
+        By switching s and s_prime we get a much faster convergence. However, both the book and the notes insist that
+        s is the state we WERE in and s' is the state we arrive in. Thus, the reward for state s is the previus reward.
+    """
+    def take_action(self, action):
+        Policy.take_action(self, action)
+        return
 
-
-    def q_value(self):
+    def q_update(self, s, a):
         pass
+
+    def q_updates(self, trajectory):
+        for s, a, s_prime in trajectory[::-1]:
+            q_value_cur = self.q_values[s][a]
+            look_ahead = max([self.q_values[s_prime][action] for action in (0, 1)])
+            q_value_new = q_value_cur + self.alpha * (self.MDP_.get_state_reward(s) + self.beta * look_ahead - q_value_cur)
+            self.q_values[s][a] = q_value_new
 
 
 class GLIEPolicy(Policy):
@@ -132,6 +161,9 @@ class NoHandicapPolicy(Policy):
             return PARK
         else:
             return DRIVE
+
+
+
 """
 Hand written policy that performs best in low-availability worlds.
 """
@@ -178,20 +210,7 @@ class ValueIterationPolicy(Policy):
     """
     def choose_action(self, steps_to_go):
         return self.actions[self.MDP_.get_time()][self.MDP_.get_state()]
-    
 
-    """
-    New output should be two size-n vectors, since it is an infinite policy of which state youre in and what action you should take.
-
-    value
-    value
-    value
-
-    action
-    action
-    action
-        
-    """
     def display_value_f(self): 
         transpose = zip(*self.backups[::-1])
         for action in range(len(transpose)):
